@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.flutter.Log;
 import io.flutter.app.FlutterApplication;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
@@ -162,7 +163,29 @@ public class AudioServicePlugin {
 		}
 
 		@Override
-		public void onMethodCall(MethodCall call, final Result result) {
+		public void onMethodCall(final MethodCall call, final Result r) {
+			Log.d("CHANNEL CLIENT", "--> " + call.method);
+
+			final Result result = new Result() {
+				@Override
+				public void success(Object o) {
+					Log.d("CHANNEL CLIENT", "--> " + call.method+ ", result.success("+o+")");
+					r.success(0);
+				}
+
+				@Override
+				public void error(String s, String s1, Object o) {
+					Log.d("CHANNEL CLIENT", "--> " + call.method+ ", result.error("+s+", "+s1+", "+o+")");
+					r.error(s, s1, o);
+				}
+
+				@Override
+				public void notImplemented() {
+					Log.d("CHANNEL CLIENT", "--> " + call.method+ ", result.notImplemented");
+					r.notImplemented();
+				}
+			};
+
 			Context context = registrar.activeContext();
 			FlutterApplication application = (FlutterApplication)context.getApplicationContext();
 			switch (call.method) {
@@ -510,6 +533,8 @@ public class AudioServicePlugin {
 		}
 
 		public void invokeMethod(String method, Object... args) {
+			Log.d("CHANNEL CLIENT", "<-- " + method);
+
 			ArrayList<Object> list = new ArrayList<Object>(Arrays.asList(args));
 			channel.invokeMethod(method, list);
 		}
@@ -529,7 +554,29 @@ public class AudioServicePlugin {
 		}
 
 		@Override
-		public void onMethodCall(MethodCall call, Result result) {
+		public void onMethodCall(final MethodCall call, final Result r) {
+			Log.d("CHANNEL BACKGROUND", "--> " + call.method);
+
+			final Result result = new Result() {
+				@Override
+				public void success(Object o) {
+					Log.d("CHANNEL BACKGROUND", "--> " + call.method+ ", result.success("+o+")");
+					r.success(0);
+				}
+
+				@Override
+				public void error(String s, String s1, Object o) {
+					Log.d("CHANNEL BACKGROUND", "--> " + call.method+ ", result.error("+s+", "+s1+", "+o+")");
+					r.error(s, s1, o);
+				}
+
+				@Override
+				public void notImplemented() {
+					Log.d("CHANNEL BACKGROUND", "--> " + call.method+ ", result.notImplemented");
+					r.notImplemented();
+				}
+			};
+
 			Context context = registrar.activeContext();
 			FlutterApplication application = (FlutterApplication)context.getApplicationContext();
 			switch (call.method) {
@@ -625,6 +672,8 @@ public class AudioServicePlugin {
 		}
 
 		public void invokeMethod(String method, Object... args) {
+			Log.d("CHANNEL BACKGROUND", "<-- " + method);
+
 			ArrayList<Object> list = new ArrayList<Object>(Arrays.asList(args));
 			channel.invokeMethod(method, list);
 		}
