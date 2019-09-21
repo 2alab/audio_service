@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 
 import 'package:audio_service/audio_service.dart';
-import 'package:flutter_tts/flutter_tts.dart';
+//import 'package:flutter_tts/flutter_tts.dart';
 import 'package:rxdart/rxdart.dart';
 
 MediaControl playControl = MediaControl(
@@ -268,7 +268,7 @@ void _backgroundTextToSpeechTask() async {
 }
 
 class TextPlayer {
-  FlutterTts _tts = FlutterTts();
+//  FlutterTts _tts = FlutterTts();
 
   /// Represents the completion of a period of playing or pausing.
   Completer _playPauseCompleter = Completer();
@@ -287,7 +287,7 @@ class TextPlayer {
     for (var i = 1; i <= 10 && _basicState != BasicPlaybackState.stopped; i++) {
       AudioServiceBackground.setMediaItem(mediaItem(i));
       AudioServiceBackground.androidForceEnableMediaButtons();
-      _tts.speak('$i');
+//      _tts.speak('$i');
       // Wait for the speech or a pause request.
       await Future.any(
           [Future.delayed(Duration(seconds: 1)), _playPauseFuture()]);
@@ -308,28 +308,28 @@ class TextPlayer {
       artist: 'Sample Artist');
 
   void playPause() {
-    if (_basicState == BasicPlaybackState.playing) {
-      _tts.stop();
-      AudioServiceBackground.setState(
-        controls: [playControl, stopControl],
-        basicState: BasicPlaybackState.paused,
-      );
-    } else {
-      AudioServiceBackground.setState(
-        controls: [pauseControl, stopControl],
-        basicState: BasicPlaybackState.playing,
-      );
-    }
-    _playPauseCompleter.complete();
+//    if (_basicState == BasicPlaybackState.playing) {
+//      _tts.stop();
+//      AudioServiceBackground.setState(
+//        controls: [playControl, stopControl],
+//        basicState: BasicPlaybackState.paused,
+//      );
+//    } else {
+//      AudioServiceBackground.setState(
+//        controls: [pauseControl, stopControl],
+//        basicState: BasicPlaybackState.playing,
+//      );
+//    }
+//    _playPauseCompleter.complete();
   }
 
   void stop() {
-    if (_basicState == BasicPlaybackState.stopped) return;
-    _tts.stop();
-    AudioServiceBackground.setState(
-      controls: [],
-      basicState: BasicPlaybackState.stopped,
-    );
-    _playPauseCompleter.complete();
+//    if (_basicState == BasicPlaybackState.stopped) return;
+//    _tts.stop();
+//    AudioServiceBackground.setState(
+//      controls: [],
+//      basicState: BasicPlaybackState.stopped,
+//    );
+//    _playPauseCompleter.complete();
   }
 }
