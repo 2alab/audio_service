@@ -1,6 +1,6 @@
 #import "AudioServicePlugin.h"
 #import "AudioSessionController.h"
-
+#import <MediaPlayer/MediaPlayer.h>
 
 #define CHANNEL_AUDIO_SERVICE @"ryanheise.com/audioService"
 #define CHANNEL_AUDIO_SERVICE_BACKGROUND @"ryanheise.com/audioServiceBackground"
@@ -35,9 +35,18 @@ static FlutterPluginRegistrantCallback _flutterPluginRegistrantCallback;
     _flutterPluginRegistrantCallback = callback;
 }
 
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        [self _setupRemoteMediaCommandsHandlers];
+    }
+    
+    return self;
+}
+
 - (void)handleMethodCall:(FlutterMethodCall*)call result:(FlutterResult)result {
     
-    NSLog(@"--> %@", call.method);
+    NSLog(@"--> %@, %@", call.method, call.arguments);
     
     if ([@"isRunning" isEqualToString:call.method]) {
         result(_audioSessionController != nil ? @YES : @NO);
@@ -49,60 +58,106 @@ static FlutterPluginRegistrantCallback _flutterPluginRegistrantCallback;
             
             [_audioSessionController startAudioSession];
         }
-        
-        [_clientChannel invokeMethod:@"onPlaybackStateChanged" arguments:@[@(8), @(513), @(0), @(1.0), @(1569105283141)]];
-        [_clientChannel invokeMethod:@"onQueueChanged" arguments:@(0)];
-        
-        NSNumber *callbackHandleId = call.arguments[@"callbackHandle"];
-        
-        FlutterCallbackInformation *callbackInfo = [FlutterCallbackCache lookupCallbackInformation:[callbackHandleId longLongValue]];
-        
-        FlutterEngine *engine = [[FlutterEngine alloc] initWithName:CHANNEL_AUDIO_SERVICE_BACKGROUND project:nil allowHeadlessExecution:YES];
-        [engine runWithEntrypoint:[callbackInfo callbackName] libraryURI:[callbackInfo callbackLibraryPath]];
 
-        if (_flutterPluginRegistrantCallback != nil) {
-            _flutterPluginRegistrantCallback(engine);
-        }
+        [self _initBackgroundChannelWithCallbackHandle:call.arguments[@"callbackHandle"]];
         
-        _backgroundChannel = [FlutterMethodChannel
-         methodChannelWithName:CHANNEL_AUDIO_SERVICE_BACKGROUND
-         binaryMessenger:[engine binaryMessenger]];
+        result(@YES);
         
-        [_backgroundChannel setMethodCallHandler:^(FlutterMethodCall * _Nonnull call, FlutterResult  _Nonnull result) {
-            NSLog(@"backgroundChannel --> %@ %@", call.method, call.arguments);
-            result([NSNumber numberWithBool:YES]);
-        }];
-        
-        
-        result([NSNumber numberWithBool:YES]);
-        
-        
-        [_backgroundChannel invokeMethod:@"onPlay" arguments:nil];
     }
     else if ([@"connect" isEqualToString:call.method]) {
-        result([NSNumber numberWithBool:YES]);
+        result(@YES);
     }
     else if ([@"disconnect" isEqualToString:call.method]) {
-        result([NSNumber numberWithBool:YES]);
+        result(@YES);
+    }
+    else if ([@"setMediaItem" isEqualToString:call.method]) {
+        
+        id value;
+        
+        NSMutableDictionary *nowPlayingInfo = [NSMutableDictionary new];
+        
+        value = call.arguments[@"album"];
+        if ([value isKindOfClass:[NSString class]]) {
+            if ([(NSString*)value length] > 0) {
+                nowPlayingInfo[MPMediaItemPropertyAlbumTitle] = value;
+            }
+        }
+
+        value = call.arguments[@"artist"];
+        if ([value isKindOfClass:[NSString class]]) {
+            if ([(NSString*)value length] > 0) {
+                nowPlayingInfo[MPMediaItemPropertyArtist] = value;
+            }
+        }
+
+        value = call.arguments[@"title"];
+        if ([value isKindOfClass:[NSString class]]) {
+            if ([(NSString*)value length] > 0) {
+                nowPlayingInfo[MPMediaItemPropertyTitle] = value;
+            }
+        }
+        [MPNowPlayingInfoCenter.defaultCenter setNowPlayingInfo:nowPlayingInfo];
+        
+        result(@YES);
     }
     else {
-        result(FlutterMethodNotImplemented);
+        result(@YES);
+//        result(FlutterMethodNotImplemented);
     }
 }
 
+#pragma mark - Private
 
+- (void)_setupRemoteMediaCommandsHandlers {
+    
+    [[[MPRemoteCommandCenter sharedCommandCenter] playCommand] addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+        [self->_backgroundChannel invokeMethod:@"onPlay" arguments:nil];
+        return MPRemoteCommandHandlerStatusSuccess;
+    }];
+    
+    [[[MPRemoteCommandCenter sharedCommandCenter] pauseCommand] addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
+        [self->_backgroundChannel invokeMethod:@"onPause" arguments:nil];
+        return MPRemoteCommandHandlerStatusSuccess;
+    }];
+}
+
+- (void)_initBackgroundChannelWithCallbackHandle:(NSNumber*)callbackHandle {
+    
+    FlutterCallbackInformation *callbackInfo = [FlutterCallbackCache lookupCallbackInformation:[callbackHandle longLongValue]];
+    
+    FlutterEngine *engine = [[FlutterEngine alloc] initWithName:CHANNEL_AUDIO_SERVICE_BACKGROUND project:nil allowHeadlessExecution:YES];
+    [engine runWithEntrypoint:[callbackInfo callbackName] libraryURI:[callbackInfo callbackLibraryPath]];
+    
+    if (_flutterPluginRegistrantCallback != nil) {
+        _flutterPluginRegistrantCallback(engine);
+    }
+    
+    _backgroundChannel = [FlutterMethodChannel
+                          methodChannelWithName:CHANNEL_AUDIO_SERVICE_BACKGROUND
+                          binaryMessenger:[engine binaryMessenger]];
+    
+    __weak typeof(self) weakSelf = self;
+    [_backgroundChannel setMethodCallHandler:^(FlutterMethodCall * _Nonnull call, FlutterResult  _Nonnull result) {
+        
+        [weakSelf handleMethodCall:call result:result];
+    }];
+
+}
 #pragma mark - AudioSessionController delegate
 
 - (void)audioSessionController:(AudioSessionController *)controller requiresToSuspendPlaying:(BOOL)isInterrupted {
     [_backgroundChannel invokeMethod:@"onAudioFocusLost" arguments:nil];
+    [_backgroundChannel invokeMethod:@"onPause" arguments:nil];
 }
 
 - (void)audioSessionControllerNotifiesToResumePlaying:(AudioSessionController *)controller {
     [_backgroundChannel invokeMethod:@"onAudioFocusGained" arguments:nil];
+    [_backgroundChannel invokeMethod:@"onPlay" arguments:nil];
 }
 
 - (void)audioSessionControllerRequiresToStopPlaying:(AudioSessionController *)controller {
     [_backgroundChannel invokeMethod:@"onAudioFocusLost" arguments:nil];
+    [_backgroundChannel invokeMethod:@"onStop" arguments:nil];
 }
 
 
