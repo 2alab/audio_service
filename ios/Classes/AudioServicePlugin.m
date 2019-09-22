@@ -39,9 +39,14 @@ static FlutterPluginRegistrantCallback _flutterPluginRegistrantCallback;
     self = [super init];
     if (self) {
         [self _setupRemoteMediaCommandsHandlers];
+        [self _registerForAudioPlayerNotifications];
     }
     
     return self;
+}
+
+- (void)dealloc {
+    [NSNotificationCenter.defaultCenter removeObserver:self];
 }
 
 - (void)handleMethodCall:(FlutterMethodCall*)call result:(FlutterResult)result {
@@ -107,6 +112,41 @@ static FlutterPluginRegistrantCallback _flutterPluginRegistrantCallback;
 }
 
 #pragma mark - Private
+
+- (void)_registerForAudioPlayerNotifications {
+    
+    // map to android PlaybackStateCompat states
+    static int STATE_NONE = 0;
+    static int STATE_STOPPED = 1;
+    static int STATE_PLAYING = 3;
+    static int STATE_BUFFERING = 6;
+    static int STATE_ERROR = 7;
+
+    [NSNotificationCenter.defaultCenter addObserverForName:@"audio.onBuffering" object:nil queue:nil usingBlock:^(NSNotification * _Nonnull note) {
+        [self _sendStateChange:STATE_BUFFERING];
+    }];
+
+    [NSNotificationCenter.defaultCenter addObserverForName:@"audio.onPlay" object:nil queue:nil usingBlock:^(NSNotification * _Nonnull note) {
+        [self _sendStateChange:STATE_PLAYING];
+    }];
+
+    [NSNotificationCenter.defaultCenter addObserverForName:@"audio.onStop" object:nil queue:nil usingBlock:^(NSNotification * _Nonnull note) {
+        [self _sendStateChange:STATE_STOPPED];
+    }];
+
+    [NSNotificationCenter.defaultCenter addObserverForName:@"audio.onError" object:nil queue:nil usingBlock:^(NSNotification * _Nonnull note) {
+        [self _sendStateChange:STATE_ERROR];
+    }];
+
+    [NSNotificationCenter.defaultCenter addObserverForName:@"audio.onEnded" object:nil queue:nil usingBlock:^(NSNotification * _Nonnull note) {
+        [self _sendStateChange:STATE_NONE];
+    }];
+}
+
+- (void)_sendStateChange:(int)state {
+    [_clientChannel invokeMethod:@"onPlaybackStateChanged"
+                       arguments:@[@(state), @(8), @(0), @(0), @(0), @(0)]];
+}
 
 - (void)_setupRemoteMediaCommandsHandlers {
     
