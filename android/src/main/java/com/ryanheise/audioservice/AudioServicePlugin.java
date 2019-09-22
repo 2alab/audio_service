@@ -164,24 +164,24 @@ public class AudioServicePlugin {
 
 		@Override
 		public void onMethodCall(final MethodCall call, final Result r) {
-			Log.d("CHANNEL CLIENT", "--> " + call.method);
+			Log.d("CHANNEL CLIENT", "--> " + call.method + ", args:" + call.arguments);
 
 			final Result result = new Result() {
 				@Override
 				public void success(Object o) {
-					Log.d("CHANNEL CLIENT", "--> " + call.method+ ", result.success("+o+")");
-					r.success(0);
+					Log.d("CHANNEL CLIENT", "--> " + call.method + ", args:" + call.arguments+ ", result.success("+o+")");
+					r.success(o);
 				}
 
 				@Override
 				public void error(String s, String s1, Object o) {
-					Log.d("CHANNEL CLIENT", "--> " + call.method+ ", result.error("+s+", "+s1+", "+o+")");
+					Log.d("CHANNEL CLIENT", "--> " + call.method + ", args:" + call.arguments+ ", result.error("+s+", "+s1+", "+o+")");
 					r.error(s, s1, o);
 				}
 
 				@Override
 				public void notImplemented() {
-					Log.d("CHANNEL CLIENT", "--> " + call.method+ ", result.notImplemented");
+					Log.d("CHANNEL CLIENT", "--> " + call.method + ", args:" + call.arguments+ ", result.notImplemented");
 					r.notImplemented();
 				}
 			};
@@ -236,6 +236,7 @@ public class AudioServicePlugin {
 					public void onLoadChildren(final String parentMediaId, final MediaBrowserServiceCompat.Result<List<MediaBrowserCompat.MediaItem>> result) {
 						ArrayList<Object> list = new ArrayList<Object>();
 						list.add(parentMediaId);
+						Log.d("CHANNEL BG", "<-- onLoadChildren, args:" + list);
 						backgroundHandler.channel.invokeMethod("onLoadChildren", list, new MethodChannel.Result() {
 							@Override
 							public void error(String errorCode, String errorMessage, Object errorDetails) {
@@ -514,17 +515,21 @@ public class AudioServicePlugin {
 					mediaController.getTransportControls().setRating(raw2rating((Map<String, Object>) arguments.get("rating")));
 				}
 			default:
+				Log.d("CHANNEL BG", "<-- " + call.method + ", args:" + call.arguments);
 				backgroundHandler.channel.invokeMethod(call.method, call.arguments, new MethodChannel.Result() {
 					@Override
 					public void error(String errorCode, String errorMessage, Object errorDetails) {
+						Log.d("CHANNEL BG", "<-- " + call.method + ", result:" + "null");
 						result.success(null);
 					}
 					@Override
 					public void notImplemented() {
+						Log.d("CHANNEL BG", "<-- " + call.method + ", result:" + "null");
 						result.success(null);
 					}
 					@Override
 					public void success(Object obj) {
+						Log.d("CHANNEL BG", "<-- " + call.method + ", result:" + obj);
 						result.success(obj);
 					}
 				});
@@ -533,7 +538,7 @@ public class AudioServicePlugin {
 		}
 
 		public void invokeMethod(String method, Object... args) {
-			Log.d("CHANNEL CLIENT", "<-- " + method);
+			Log.d("CHANNEL CLIENT", "<-- " + method + ", args:" + args);
 
 			ArrayList<Object> list = new ArrayList<Object>(Arrays.asList(args));
 			channel.invokeMethod(method, list);
@@ -555,18 +560,18 @@ public class AudioServicePlugin {
 
 		@Override
 		public void onMethodCall(final MethodCall call, final Result r) {
-			Log.d("CHANNEL BACKGROUND", "--> " + call.method);
+			Log.d("CHANNEL BACKGROUND", "--> " + call.method + ", args:" + call.arguments);
 
 			final Result result = new Result() {
 				@Override
 				public void success(Object o) {
-					Log.d("CHANNEL BACKGROUND", "--> " + call.method+ ", result.success("+o+")");
-					r.success(0);
+					Log.d("CHANNEL BACKGROUND", "--> " + call.method + ", args:" + call.arguments+ ", result.success("+o+")");
+					r.success(o);
 				}
 
 				@Override
 				public void error(String s, String s1, Object o) {
-					Log.d("CHANNEL BACKGROUND", "--> " + call.method+ ", result.error("+s+", "+s1+", "+o+")");
+					Log.d("CHANNEL BACKGROUND", "--> " + call.method + ", args:" + call.arguments+ ", result.error("+s+", "+s1+", "+o+")");
 					r.error(s, s1, o);
 				}
 
@@ -672,7 +677,7 @@ public class AudioServicePlugin {
 		}
 
 		public void invokeMethod(String method, Object... args) {
-			Log.d("CHANNEL BACKGROUND", "<-- " + method);
+			Log.d("CHANNEL BACKGROUND", "<-- " + method + ", args:" + args);
 
 			ArrayList<Object> list = new ArrayList<Object>(Arrays.asList(args));
 			channel.invokeMethod(method, list);

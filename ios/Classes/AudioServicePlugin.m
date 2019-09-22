@@ -14,6 +14,8 @@
 }
 @end
 
+static FlutterPluginRegistrantCallback _flutterPluginRegistrantCallback;
+
 @implementation AudioServicePlugin
 
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
@@ -22,17 +24,15 @@
                                            methodChannelWithName:CHANNEL_AUDIO_SERVICE
                                            binaryMessenger:[registrar messenger]];
 
-    FlutterMethodChannel *backgroundChannel = [FlutterMethodChannel
-                                           methodChannelWithName:CHANNEL_AUDIO_SERVICE_BACKGROUND
-                                           binaryMessenger:[registrar messenger]];
-
     AudioServicePlugin *instance = [[AudioServicePlugin alloc] init];
     
     instance->_clientChannel = clientChannel;
-    instance->_backgroundChannel = backgroundChannel;
     
     [registrar addMethodCallDelegate:instance channel:clientChannel];
-    [registrar addMethodCallDelegate:instance channel:backgroundChannel];
+}
+
++ (void)setPluginRegistrantCallback:(FlutterPluginRegistrantCallback)callback {
+    _flutterPluginRegistrantCallback = callback;
 }
 
 - (void)handleMethodCall:(FlutterMethodCall*)call result:(FlutterResult)result {
@@ -48,17 +48,42 @@
             _audioSessionController.delegate = self;
             
             [_audioSessionController startAudioSession];
-            result(@YES);
         }
-        else {
-            result(@NO);
+        
+        [_clientChannel invokeMethod:@"onPlaybackStateChanged" arguments:@[@(8), @(513), @(0), @(1.0), @(1569105283141)]];
+        [_clientChannel invokeMethod:@"onQueueChanged" arguments:@(0)];
+        
+        NSNumber *callbackHandleId = call.arguments[@"callbackHandle"];
+        
+        FlutterCallbackInformation *callbackInfo = [FlutterCallbackCache lookupCallbackInformation:[callbackHandleId longLongValue]];
+        
+        FlutterEngine *engine = [[FlutterEngine alloc] initWithName:CHANNEL_AUDIO_SERVICE_BACKGROUND project:nil allowHeadlessExecution:YES];
+        [engine runWithEntrypoint:[callbackInfo callbackName] libraryURI:[callbackInfo callbackLibraryPath]];
+
+        if (_flutterPluginRegistrantCallback != nil) {
+            _flutterPluginRegistrantCallback(engine);
         }
+        
+        _backgroundChannel = [FlutterMethodChannel
+         methodChannelWithName:CHANNEL_AUDIO_SERVICE_BACKGROUND
+         binaryMessenger:[engine binaryMessenger]];
+        
+        [_backgroundChannel setMethodCallHandler:^(FlutterMethodCall * _Nonnull call, FlutterResult  _Nonnull result) {
+            NSLog(@"backgroundChannel --> %@ %@", call.method, call.arguments);
+            result([NSNumber numberWithBool:YES]);
+        }];
+        
+        
+        result([NSNumber numberWithBool:YES]);
+        
+        
+        [_backgroundChannel invokeMethod:@"onPlay" arguments:nil];
     }
     else if ([@"connect" isEqualToString:call.method]) {
-        result(@YES);
+        result([NSNumber numberWithBool:YES]);
     }
     else if ([@"disconnect" isEqualToString:call.method]) {
-        result(@YES);
+        result([NSNumber numberWithBool:YES]);
     }
     else {
         result(FlutterMethodNotImplemented);
