@@ -14,7 +14,9 @@ dependencies:
     sdk: flutter
 
   path_provider: ^0.4.1
-  audioplayer: ^0.5.2
+  audioplayer:
+    git:
+      url: https://github.com/2alab/audioplayer.git
   rxdart: ^0.22.0
   audio_service:
     path: ../

@@ -182,25 +182,26 @@ class CustomAudioPlayer {
     AudioServiceBackground.setMediaItem(mediaItem);
 
     var playerStateSubscription = _audioPlayer.onPlayerStateChanged
-        .where((state) => state == AudioPlayerState.COMPLETED)
+        .where((state) => state == AudioPlayerState.END)
         .listen((state) {
       stop();
     });
-    var audioPositionSubscription =
-        _audioPlayer.onAudioPositionChanged.listen((when) {
-      final connected = _position == null;
-      _position = when.inMilliseconds;
-      if (connected) {
-        // After a delay, we finally start receiving audio positions
-        // from the AudioPlayer plugin, so we can set the state to
-        // playing.
-        _setPlayingState();
-      }
-    });
+//    var audioPositionSubscription =
+//        _audioPlayer.onAudioPositionChanged.listen((when) {
+//      final connected = _position == null;
+//      _position = when.inMilliseconds;
+//      if (connected) {
+//        // After a delay, we finally start receiving audio positions
+//        // from the AudioPlayer plugin, so we can set the state to
+//        // playing.
+//        _setPlayingState();
+//      }
+//    });
     play();
+    _setPlayingState();
     await _completer.future;
     playerStateSubscription.cancel();
-    audioPositionSubscription.cancel();
+//    audioPositionSubscription.cancel();
   }
 
   void _setPlayingState() {
@@ -234,7 +235,7 @@ class CustomAudioPlayer {
   }
 
   void pause() {
-    _audioPlayer.pause();
+    _audioPlayer.stop();
     AudioServiceBackground.setState(
       controls: [playControl, stopControl],
       basicState: BasicPlaybackState.paused,
