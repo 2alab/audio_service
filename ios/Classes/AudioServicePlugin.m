@@ -113,6 +113,22 @@ static FlutterPluginRegistrantCallback _flutterPluginRegistrantCallback;
     else if ([@"ready" isEqualToString:call.method]) {
         result(@YES);
     }
+    else if ([@"play" isEqualToString:call.method]) {
+        [self->_backgroundChannel invokeMethod:@"onPlay" arguments:nil];
+        result(@YES);
+    }
+    else if ([@"pause" isEqualToString:call.method]) {
+        [self->_backgroundChannel invokeMethod:@"onPause" arguments:nil];
+        result(@YES);
+    }
+    else if ([@"stop" isEqualToString:call.method]) {
+        [self->_backgroundChannel invokeMethod:@"onStop" arguments:nil];
+        result(@YES);
+    }
+    else if ([@"prepare" isEqualToString:call.method]) {
+        [self->_backgroundChannel invokeMethod:@"onPrepare" arguments:nil];
+        result(@YES);
+    }
     else {
         result(FlutterMethodNotImplemented);
     }
