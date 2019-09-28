@@ -104,9 +104,17 @@ static FlutterPluginRegistrantCallback _flutterPluginRegistrantCallback;
         
         result(@YES);
     }
-    else {
+    else if ([@"setState" isEqualToString:call.method]) {
+
+        NSNumber *state = call.arguments[1];
+        [_clientChannel invokeMethod:@"onPlaybackStateChanged" arguments:@[state, @0, @0, @1.0, @0]];
         result(@YES);
-//        result(FlutterMethodNotImplemented);
+    }
+    else if ([@"ready" isEqualToString:call.method]) {
+        result(@YES);
+    }
+    else {
+        result(FlutterMethodNotImplemented);
     }
 }
 
