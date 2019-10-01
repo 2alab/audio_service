@@ -103,6 +103,8 @@ static FlutterPluginRegistrantCallback _flutterPluginRegistrantCallback;
         [MPNowPlayingInfoCenter.defaultCenter setNowPlayingInfo:nowPlayingInfo];
         
         result(@YES);
+
+        [_clientChannel invokeMethod:@"onMediaChanged" arguments:@[call.arguments]];
     }
     else if ([@"setState" isEqualToString:call.method]) {
 
