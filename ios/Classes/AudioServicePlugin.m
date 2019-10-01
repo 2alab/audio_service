@@ -1,6 +1,7 @@
 #import "AudioServicePlugin.h"
 #import "AudioSessionController.h"
 #import <MediaPlayer/MediaPlayer.h>
+#import "UIImage+vImageScaling.h"
 
 #define CHANNEL_AUDIO_SERVICE @"ryanheise.com/audioService"
 #define CHANNEL_AUDIO_SERVICE_BACKGROUND @"ryanheise.com/audioServiceBackground"
@@ -100,6 +101,22 @@ static FlutterPluginRegistrantCallback _flutterPluginRegistrantCallback;
                 nowPlayingInfo[MPMediaItemPropertyTitle] = value;
             }
         }
+        
+        value = call.arguments[@"artUri"];
+        if ([value isKindOfClass:[NSString class]]) {
+            if ([(NSString*)value length] > 0) {
+                
+                if (@available(iOS 10.0, *)) {
+                    CGRect screenBounds = [[UIScreen mainScreen] bounds];
+                    CGSize size = CGSizeMake(screenBounds.size.width, screenBounds.size.width);
+                    MPMediaItemArtwork *artwork = [[MPMediaItemArtwork alloc] initWithBoundsSize:size requestHandler:^UIImage * _Nonnull(CGSize size) {
+                        return [self _loadImageFromURL:[NSURL URLWithString:value] andScaleToFitSize:size];
+                    }];
+                    nowPlayingInfo[MPMediaItemPropertyArtwork] = artwork;
+                }
+            }
+        }
+
         [MPNowPlayingInfoCenter.defaultCenter setNowPlayingInfo:nowPlayingInfo];
         
         result(@YES);
@@ -178,6 +195,7 @@ static FlutterPluginRegistrantCallback _flutterPluginRegistrantCallback;
     }];
 
 }
+
 #pragma mark - AudioSessionController delegate
 
 - (void)audioSessionController:(AudioSessionController *)controller requiresToSuspendPlaying:(BOOL)isInterrupted {
@@ -192,5 +210,18 @@ static FlutterPluginRegistrantCallback _flutterPluginRegistrantCallback;
     [_backgroundChannel invokeMethod:@"onAudioFocusLost" arguments:nil];
 }
 
+#pragma mark - Image loader
+
+- (UIImage*)_loadImageFromURL:(NSURL*)url andScaleToFitSize:(CGSize)size {
+    
+    NSData *data = [NSData dataWithContentsOfURL:url];
+    
+    if (data != nil) {
+        UIImage *image = [[UIImage alloc] initWithData:data scale:UIScreen.mainScreen.scale];
+        return [image vImageScaledImageWithSize:size];
+    }
+    
+    return nil;
+}
 
 @end

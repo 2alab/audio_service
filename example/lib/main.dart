@@ -177,7 +177,8 @@ class CustomAudioPlayer {
         id: 'audio_1',
         album: 'Sample Album',
         title: 'Sample Title',
-        artist: 'Sample Artist');
+        artist: 'Sample Artist',
+        artUri: 'https://meta.fmgid.com/600x600/stations/hiphopradio/covers/2261420811.jpg');
 
     AudioServiceBackground.setMediaItem(mediaItem);
 
